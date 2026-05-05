@@ -17,5 +17,7 @@ loguru
 lxml
 tenacity
 rich
+fastapi
+uvicorn
 pytest
 pytest-asyncio
