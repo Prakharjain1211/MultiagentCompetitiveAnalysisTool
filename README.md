@@ -103,6 +103,7 @@ competitive-analysis-tool/
 │   └── prompts.py           # All LLM prompt templates
 ├── src/
 │   ├── main.py              # CLI entry point
+│   ├── api.py               # FastAPI REST endpoints
 │   ├── graph/
 │   │   ├── state.py         # ResearchState & Subtask TypedDicts
 │   │   ├── graph_builder.py # LangGraph construction & compilation
@@ -190,6 +191,89 @@ pytest tests/ -v
 
 ---
 
+## FastAPI REST API
+
+The tool also ships with a FastAPI server for web UI or integration use.
+
+### Start the server
+
+```bash
+uvicorn src.api:app --reload --port 8000
+```
+
+### Endpoints
+
+#### POST /analyze
+
+Submit a competitive analysis request. Runs the graph in a background thread and returns immediately with a `run_id` for polling.
+
+```bash
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"company": "NVIDIA"}'
+```
+
+**Response (202 Accepted):**
+```json
+{
+  "run_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "status": "pending"
+}
+```
+
+#### GET /analyze/{run_id}
+
+Poll for the result of a submitted analysis.
+
+```bash
+curl http://localhost:8000/analyze/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+**Response while running:**
+```json
+{
+  "run_id": "a1b2c3d4-...",
+  "status": "running",
+  "report": "",
+  "subtasks": [],
+  "errors": []
+}
+```
+
+**Response when complete:**
+```json
+{
+  "run_id": "a1b2c3d4-...",
+  "status": "completed",
+  "report": "# Competitive Analysis: NVIDIA\n\n## Company Overview...",
+  "subtasks": [
+    { "id": 1, "description": "...", "search_query": "...", "status": "done", "result": "..." }
+  ],
+  "errors": []
+}
+```
+
+#### GET /health
+
+Health check.
+
+```bash
+curl http://localhost:8000/health
+```
+
+**Response:**
+```json
+{ "status": "ok" }
+```
+
+### Integration tips
+
+- **Polling interval**: Wait 5-10 seconds between polls. Analysis typically takes 30-90 seconds.
+- **Frontend**: Build a simple React/Vue UI that calls `POST /analyze` then polls `GET /analyze/{run_id}` until `status` is `"completed"` or `"error"`.
+- **Production**: Replace the in-memory `_runs` dict with Redis or a database for persistence across restarts.
+
+---
+
 ## Design Decisions
 
 | Decision | Choice | Rationale |
@@ -212,6 +296,8 @@ pytest tests/ -v
 - [x] Phase 5: Graph wiring — LangGraph topology
 - [x] Phase 6: CLI — argument parsing, rich output
 - [ ] Phase 7: Testing — unit tests for all modules
+- [ ] Phase 8: Hardening — retries, backoff, error handling
+- [x] Phase 9: API — FastAPI REST endpoints with background execution
 
 See [ROADMAP.md](ROADMAP.md) for full details.
 
