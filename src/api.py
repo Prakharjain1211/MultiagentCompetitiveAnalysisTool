@@ -101,7 +101,10 @@ def _execute_analysis(run_id: str, company: str, model: str) -> None:
             "errors": [],
         }
 
-        final_state = _graph.invoke(initial_state)
+        final_state = _graph.invoke(
+            initial_state,
+            config={"configurable": {"thread_id": run_id}},
+        )
 
         _runs[run_id].update({
             "status": "completed",
