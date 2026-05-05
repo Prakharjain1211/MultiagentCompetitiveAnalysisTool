@@ -164,6 +164,43 @@ competitive-analysis-tool/
 | 7.4 | `tests/test_graph.py` | Full graph mock test with simulated state transitions |
 | 7.5 | `tests/test_rag.py` | Test chunker overlap logic, vector store index/retrieve roundtrip |
 
+### Phase 8: Hardening (Day 8)
+
+| Step | What to Do |
+|------|------------|
+| 8.1 | Add exponential backoff to all external API calls (LLM, search) |
+| 8.2 | Add `tenacity` retry decorators to scraper (3 attempts, 2x backoff) |
+| 8.3 | Graceful degradation: if Tavily also fails, use cached/stale data |
+| 8.4 | Log all errors to `data/errors.log` with stack traces |
+| 8.5 | Validate OpenAI API key on startup (test call) |
+| 8.6 | `.gitignore` -> `data/`, `.env`, `__pycache__`, `*.pyc` |
+
+### Phase 9: FastAPI API Layer (Day 9)
+
+| Step | File | What to Build |
+|------|------|---------------|
+| 9.1 | `src/api.py` | FastAPI app with run store, background execution, and 3 endpoints |
+| 9.2 | `requirements.txt` | Add `fastapi`, `uvicorn` |
+| 9.3 | `README.md` | Add API documentation section with endpoint reference and curl examples |
+
+#### Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/analyze` | Submit a competitive analysis. Accepts `{ "company": "...", "model": "..." }`. Returns `{ "run_id": "uuid" }` immediately. Executes in a background thread. |
+| `GET` | `/analyze/{run_id}` | Poll for results. Returns `{ "status", "report", "subtasks", "errors" }`. |
+| `GET` | `/health` | Health check. Returns `{ "status": "ok" }`. |
+
+#### Architecture
+
+```
+Client --POST /analyze--> FastAPI --> Background Thread --> LangGraph Graph
+  |                                                              |
+  +------GET /analyze/{run_id}--> In-Memory Run Store <----------+
+                                            |
+                                    { status, report, errors }
+```
+
 ---
 
 ## Data Flow Diagram (Per Run)
@@ -404,7 +441,8 @@ pytest-asyncio>=0.24.0,<1.0.0
 | RAG | 1 | Chunker, vector store |
 | Graph nodes | 2 | 4 nodes with state management |
 | Graph wiring | 1 | Build & compile LangGraph |
-| Entry point | 1 | CLI, output formatting |
+| Entry point | 1 | CLI, rich output formatting |
 | Testing | 1 | Unit tests for all modules |
 | Hardening | 1 | Retries, backoff, error handling |
-| **Total** | **9 days** | **Runnable production tool** |
+| FastAPI API | 1 | REST API with background execution |
+| **Total** | **10 days** | **Runnable CLI tool + REST API** |
