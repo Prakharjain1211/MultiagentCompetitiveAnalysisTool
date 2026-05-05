@@ -14,14 +14,14 @@ Given a company name, it autonomously decomposes the task into research subtasks
 │                                                             │
 │   [planner_node] ──→ [researcher_node] ──→ [validator_node] │
 │        ↑                        │                           │
-│        └────── (retry loop) ─────┘                           │
-│                                      ↓                       │
-│                             [synthesizer_node]               │
-│                                    │                         │
-│                         RAG Vector Store                     │
-│                    (Chroma + all-MiniLM-L6-v2)               │
-│                     ↑ chunk & embed notes                    │
-│                     ↑ retrieve per section                   │
+│        └────── (retry loop) ─────┘                          │
+│                                      ↓                      │
+│                             [synthesizer_node]              │
+│                                    │                        │
+│                         RAG Vector Store                    │
+│                    (Chroma + all-MiniLM-L6-v2)              │
+│                     ↑ chunk & embed notes                   │
+│                     ↑ retrieve per section                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
