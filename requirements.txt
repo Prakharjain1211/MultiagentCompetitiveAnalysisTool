@@ -5,9 +5,10 @@ langchain-chroma
 langchain-huggingface
 chromadb
 sentence-transformers
-duckduckgo-search
+ddgs
 tavily
 requests
+cloudscraper
 beautifulsoup4
 openai
 pydantic

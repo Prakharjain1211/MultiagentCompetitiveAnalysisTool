@@ -13,7 +13,7 @@ Usage:
 
 from typing import Any
 
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 from tavily import TavilyClient
 
 from config.settings import settings
