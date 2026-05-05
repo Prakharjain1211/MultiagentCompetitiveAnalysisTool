@@ -212,7 +212,6 @@ pytest tests/ -v
 - [x] Phase 5: Graph wiring — LangGraph topology
 - [x] Phase 6: CLI — argument parsing, rich output
 - [ ] Phase 7: Testing — unit tests for all modules
-- [ ] Phase 8: Hardening — retries, backoff, error handling
 
 See [ROADMAP.md](ROADMAP.md) for full details.
 

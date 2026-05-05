@@ -164,17 +164,6 @@ competitive-analysis-tool/
 | 7.4 | `tests/test_graph.py` | Full graph mock test with simulated state transitions |
 | 7.5 | `tests/test_rag.py` | Test chunker overlap logic, vector store index/retrieve roundtrip |
 
-### Phase 8: Hardening (Day 8)
-
-| Step | What to Do |
-|------|------------|
-| 8.1 | Add exponential backoff to all external API calls (LLM, search) |
-| 8.2 | Add `tenacity` retry decorators to scraper (3 attempts, 2x backoff) |
-| 8.3 | Graceful degradation: if Tavily also fails, use cached/stale data |
-| 8.4 | Log all errors to `data/errors.log` with stack traces |
-| 8.5 | Validate OpenAI API key on startup (test call) |
-| 8.6 | `.gitignore` → `data/`, `.env`, `__pycache__`, `*.pyc` |
-
 ---
 
 ## Data Flow Diagram (Per Run)
