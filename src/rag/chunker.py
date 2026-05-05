@@ -11,8 +11,8 @@ Usage:
     documents = chunker.chunk(["note 1 text...", "note 2 text..."])
 """
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.schema import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 
 from config.settings import settings
 

@@ -10,7 +10,14 @@ Usage:
 """
 
 import argparse
+import os
 import sys
+
+# Ensure stdout can handle Unicode on Windows (avoids cp1252 errors from Rich).
+if sys.platform == "win32":
+    os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
 
 from rich.console import Console
 from rich.panel import Panel
@@ -122,7 +129,7 @@ def run() -> None:
 
     # Build the graph.
     with Progress(
-        SpinnerColumn(),
+        SpinnerColumn("line"),
         TextColumn("[progress.description]{task.description}"),
         console=console,
     ) as progress:
@@ -143,14 +150,17 @@ def run() -> None:
 
     # Invoke the graph.
     with Progress(
-        SpinnerColumn(),
+        SpinnerColumn("line"),
         TextColumn("[progress.description]{task.description}"),
         console=console,
         transient=True,
     ) as progress:
         task_id = progress.add_task("[cyan]Researching...", total=None)
         try:
-            final_state = graph.invoke(initial_state)
+            final_state = graph.invoke(
+                initial_state,
+                config={"configurable": {"thread_id": "research-run-1"}},
+            )
         except Exception as e:
             progress.stop()
             logger.error(f"Graph execution failed: {e}")

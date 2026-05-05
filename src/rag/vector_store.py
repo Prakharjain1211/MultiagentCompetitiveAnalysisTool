@@ -14,7 +14,7 @@ Usage:
 
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.schema import Document
+from langchain_core.documents import Document
 
 from loguru import logger
 
@@ -39,6 +39,7 @@ class VectorStore:
             persist_directory: Optional path for Chroma persistence.
                                If None, runs in-memory only.
         """
+        self._persist_directory = persist_directory
         self.embedder = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
         )
@@ -88,6 +89,12 @@ class VectorStore:
         """Delete all documents from the vector store.
 
         Useful between runs to avoid stale data from previous analyses.
+        Re-creates the Chroma instance so subsequent operations work.
         """
         self.db.delete_collection()
+        # Re-create the Chroma instance so the collection is usable again.
+        self.db = Chroma(
+            embedding_function=self.embedder,
+            persist_directory=self._persist_directory,
+        )
         logger.info("Vector store cleared")
