@@ -1,57 +1,101 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import CompanyCard from './components/CompanyCard';
-import { mockCompanies } from './mockData';
+import ProgressPanel from './components/ProgressPanel';
+import { submitAnalysis, getAnalysisStatus } from './api';
 import { AnimatePresence, motion } from 'framer-motion';
 
 function App() {
-  const [company, setCompany] = useState(null);
+  const [companyName, setCompanyName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [analysisStatus, setAnalysisStatus] = useState('idle');
+  const [report, setReport] = useState('');
+  const [subtasks, setSubtasks] = useState([]);
+  const [runId, setRunId] = useState(null);
+  const pollingRef = useRef(null);
 
   const handleSearch = async (name) => {
+    setCompanyName(name);
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    const key = name.toLowerCase();
-    const data = mockCompanies[key] || generateMock(name);
-    setCompany(data);
-    setLoading(false);
+    setError(null);
+    setAnalysisStatus('pending');
+    setSubtasks([]);
+    setReport('');
+    setRunId(null);
+
+    try {
+      const { run_id } = await submitAnalysis(name);
+      setRunId(run_id);
+
+      const poll = async () => {
+        const result = await getAnalysisStatus(run_id);
+        if (!result) return;
+
+        setAnalysisStatus(result.status);
+        setSubtasks(result.subtasks || []);
+
+        if (result.status === 'completed') {
+          setReport(result.report);
+          setLoading(false);
+          clearInterval(pollingRef.current);
+        } else if (result.status === 'error') {
+          setError(result.errors?.join(', ') || 'Analysis failed');
+          setLoading(false);
+          clearInterval(pollingRef.current);
+        }
+      };
+
+      pollingRef.current = setInterval(poll, 2000);
+      poll();
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
   };
 
-  const generateMock = (name) => {
-    return {
-      name,
-      industry: 'Technology',
-      founded: '2020',
-      hq: 'San Francisco, CA',
-      employees: '200+',
-      recentFunding: '$10M (Series A)',
-      valuation: '$50M+',
-      tags: ['AI', 'SaaS'],
-      sentimentScore: Math.floor(Math.random() * 30) + 70,
-      sentimentBreakdown: { positive: 70, neutral: 20, negative: 10 },
-      news: [],
-      growthRate: '+30%',
-      marketPos: 'Emerging Player',
-      hiringTrend: { openRoles: 42 },
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
     };
-  };
+  }, []);
+
+  const showResults = analysisStatus === 'completed' && report;
+  const showProgress = (analysisStatus === 'pending' || analysisStatus === 'running') && runId;
 
   return (
     <div className="min-h-screen bg-surface-secondary bg-radial-glow bg-grid">
       <Header />
       <main className="max-w-5xl mx-auto px-4 md:px-6 pb-20">
         <SearchBar onSearch={handleSearch} loading={loading} />
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto max-w-xl mt-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm text-center"
+          >
+            {error}
+          </motion.div>
+        )}
+
         <AnimatePresence mode="wait">
-          {company && (
+          {showProgress && !showResults && (
+            <ProgressPanel subtasks={subtasks} companyName={companyName} />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence mode="wait">
+          {showResults && (
             <motion.div
-              key={company.name}
+              key="result"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -30 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
             >
-              <CompanyCard data={company} />
+              <CompanyCard companyName={companyName} report={report} subtasks={subtasks} />
             </motion.div>
           )}
         </AnimatePresence>

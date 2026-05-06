@@ -89,18 +89,18 @@ Return ONLY a valid JSON array.
 
 Example:
 [
-  {
+  {{
     "id": 1,
     "type": "news",
     "description": "Identify recent AI product launches and partnerships",
     "search_query": "NVIDIA latest AI announcements partnerships 2026"
-  },
-  {
+  }},
+  {{
     "id": 2,
     "type": "earnings",
     "description": "Extract strategic priorities from latest earnings call",
     "search_query": "NVIDIA earnings call transcript 2026 strategy AI data center"
-  }
+  }}
 ]
 """
 

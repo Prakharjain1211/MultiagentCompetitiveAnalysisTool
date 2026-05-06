@@ -11,6 +11,7 @@ Usage:
 """
 
 import json
+import re
 
 from config.prompts import PLANNER_PROMPT
 from src.graph.state import ResearchState
@@ -26,6 +27,26 @@ class PlannerNode:
 
     def __init__(self, llm: LLMClient | None = None):
         self.llm = llm or LLMClient()
+
+    @staticmethod
+    def _extract_json(text: str) -> str:
+        """Extract the first JSON array or object from arbitrary text."""
+        text = text.strip()
+        text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        text = text.strip("'\"")
+        brace = text.find("{")
+        bracket = text.find("[")
+        if bracket != -1 and (brace == -1 or bracket < brace):
+            start = bracket
+            end = text.rfind("]")
+        elif brace != -1:
+            start = brace
+            end = text.rfind("}")
+        else:
+            raise ValueError(f"No JSON array or object found in response: {text[:200]}")
+        if end == -1:
+            raise ValueError(f"Unmatched bracket — no closing delimiter found: {text[start:start+200]}")
+        return text[start:end+1]
 
     def call(self, state: ResearchState) -> ResearchState:
         """Break the original query into 3-5 research subtasks.
@@ -50,24 +71,24 @@ class PlannerNode:
             {"role": "user", "content": prompt},
         ])
 
-        # Strip markdown fences if the LLM wraps JSON in ```json ... ```
-        clean = response.strip().removeprefix("```json").removesuffix("```").strip()
-
         try:
-            subtask_list = json.loads(clean)
-        except json.JSONDecodeError as e:
+            clean = self._extract_json(response)
+            raw = json.loads(clean)
+        except (json.JSONDecodeError, ValueError) as e:
             raise ValueError(f"Failed to parse planner JSON output: {e}\nRaw: {response}") from e
 
-        # Normalise into Subtask TypedDicts.
+        if isinstance(raw, dict):
+            raw = [raw]
+
         state["subtasks"] = [
             {
-                "id": item["id"],
-                "description": item["description"],
-                "search_query": item["search_query"],
+                "id": item.get("id", i),
+                "description": item.get("description", ""),
+                "search_query": item.get("search_query", item.get("description", query)),
                 "status": "pending",
                 "result": "",
             }
-            for item in subtask_list
+            for i, item in enumerate(raw)
         ]
         state["current_subtask_idx"] = 0
         state["retry_count"] = 0
