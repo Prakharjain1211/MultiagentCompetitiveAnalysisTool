@@ -4,3 +4,4 @@ __pycache__/
 data/chroma_db/
 notebooks/
 ENHANCEMENTS.md
+node_modules/
